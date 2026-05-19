@@ -1,0 +1,202 @@
+# SDP Investor Network Database — Taxonomy / Picklists
+# Every value written to a categorical column in the SQLite DB must
+# normalize to one of these slugs. Out-of-picklist values go to
+# review_queue with a rapidfuzz-suggested mapping.
+#
+# Format: each picklist is a slug -> {label, aliases}.
+# `label` is what we show in exports. `aliases` lists raw values seen
+# in the source data that auto-resolve to this slug.
+
+version: 1
+last_updated: 2026-05-18
+
+# ---------------------------------------------------------------------
+# firm_type — what kind of capital-providing organization a firm is.
+# Used by firms.type. Derived from "Firm Type" + "Entity Type" columns.
+# ---------------------------------------------------------------------
+firm_type:
+  vc:                    {label: "Venture Capital",        aliases: ["VC", "Venture Capital"]}
+  pe_firm:               {label: "Private Equity",         aliases: ["PE Firm", "Private Equity", "PE"]}
+  growth_equity:         {label: "Growth Equity",          aliases: ["Growth/Expansion", "Growth Equity"]}
+  infra_fund:            {label: "Infrastructure Fund",    aliases: ["Infra Fund", "Infra fund", "Infrastructure"]}
+  family_office:         {label: "Family Office",          aliases: ["Family Office", "FO", "Multi-Family Office", "Single Family Office"]}
+  lender:                {label: "Lender / Debt",          aliases: ["Lender", "Debt Fund", "Credit Fund", "Private Credit"]}
+  pension_fund:          {label: "Pension Fund",           aliases: ["Pension Fund", "Pension"]}
+  sovereign:             {label: "Sovereign Wealth Fund",  aliases: ["Sovereign", "SWF"]}
+  insurance:             {label: "Insurance",              aliases: ["Insurance", "Insurance Company"]}
+  hedge_fund:            {label: "Hedge Fund",             aliases: ["Hedge Fund", "HF"]}
+  investment_bank:       {label: "Investment Bank",        aliases: ["Investment Bank", "IB", "Bank"]}
+  angel_network:         {label: "Angel / Angel Network",  aliases: ["Angel Investment Network", "Angel", "Angel Network"]}
+  corporate_vc:          {label: "Corporate VC",           aliases: ["CVC", "Corporate VC", "Corporate Venture"]}
+  strategic:             {label: "Strategic / Corporate",  aliases: ["Strategic", "Corporate", "Industry Strategic"]}
+  utility:               {label: "Utility",                aliases: ["Utility"]}
+  incubator:             {label: "Incubator / Accelerator",aliases: ["Incubator", "Accelerator"]}
+  sponsor:               {label: "Project Sponsor",        aliases: ["Sponsor"]}
+  individual:            {label: "Individual",             aliases: ["Individual", "HNW", "Angel Individual"]}
+  other:                 {label: "Other",                  aliases: ["Other", "Company", "Unknown"]}
+
+# ---------------------------------------------------------------------
+# outreach_status — engagement-level status of a contact in an outreach.
+# Used by engagements.status. From "Stage" column in Interest sheets.
+# ---------------------------------------------------------------------
+outreach_status:
+  pitched:               {label: "Pitched",                aliases: ["Pitched"]}
+  deck_sent:             {label: "Deck Sent",              aliases: ["Deck Sent", "Sent Deck"]}
+  inquiry:               {label: "Inquiry",                aliases: ["Inquiry", "Inquired"]}
+  meeting_booked:        {label: "Meeting Booked",         aliases: ["Meeting Booked", "Meeting Request", "1st meeting Booked"]}
+  second_meeting:        {label: "2nd Meeting Booked",     aliases: ["2nd meeting Booked", "Second Meeting"]}
+  in_diligence:          {label: "In Diligence",           aliases: ["In Diligence", "Diligence"]}
+  term_sheet:            {label: "Term Sheet",             aliases: ["Term Sheet"]}
+  closed:                {label: "Closed",                 aliases: ["Closed", "Funded"]}
+  passed:                {label: "Passed",                 aliases: ["Not for us", "Pass", "Passed", "Declined"]}
+  followup:              {label: "Follow-up",              aliases: ["Followup", "Follow-up", "Follow up"]}
+  circle_back:           {label: "Circle Back",            aliases: ["Circle Back", "Revisit"]}
+  no_response:           {label: "No Response",            aliases: ["No Response", "Ghosted", "No reply"]}
+
+# ---------------------------------------------------------------------
+# seniority — derived from contacts.title via title_to_seniority() rules.
+# Used by contacts.seniority.
+# ---------------------------------------------------------------------
+seniority:
+  founder:               {label: "Founder",                aliases: ["Founder", "Co-Founder", "Cofounder"]}
+  ceo:                   {label: "CEO",                    aliases: ["CEO", "Chief Executive Officer"]}
+  cio:                   {label: "CIO",                    aliases: ["CIO", "Chief Investment Officer"]}
+  cfo:                   {label: "CFO",                    aliases: ["CFO", "Chief Financial Officer"]}
+  managing_partner:      {label: "Managing Partner",       aliases: ["Managing Partner", "MP"]}
+  managing_director:     {label: "Managing Director",      aliases: ["Managing Director", "MD"]}
+  partner:               {label: "Partner",                aliases: ["Partner", "General Partner", "GP"]}
+  principal:             {label: "Principal",              aliases: ["Principal"]}
+  director:              {label: "Director",               aliases: ["Director", "Investment Director"]}
+  vp:                    {label: "Vice President",         aliases: ["Vice President", "VP", "Senior Vice President", "SVP"]}
+  associate:             {label: "Associate",              aliases: ["Associate", "Senior Associate"]}
+  analyst:               {label: "Analyst",                aliases: ["Analyst", "Investment Analyst"]}
+  representative:        {label: "Representative",         aliases: ["Representative", "Rep"]}
+  other:                 {label: "Other",                  aliases: ["Other"]}
+
+# ---------------------------------------------------------------------
+# sector — investment / industry focus. Multi-valued per firm/mandate.
+# Derived from "Industry Interest" + "Industry Focus" + inferred.
+# ---------------------------------------------------------------------
+sector:
+  energy_transition:     {label: "Energy Transition",      aliases: ["Energy Transition", "Climate Tech", "CleanTech"]}
+  solar:                 {label: "Solar",                  aliases: ["Solar", "PV"]}
+  wind:                  {label: "Wind",                   aliases: ["Wind"]}
+  storage:               {label: "Energy Storage",         aliases: ["Storage", "BESS", "Battery"]}
+  ev_charging:           {label: "EV / Charging",          aliases: ["EV", "EV Charging", "Charging"]}
+  hydrogen:              {label: "Hydrogen",               aliases: ["Hydrogen", "H2"]}
+  data_centers:          {label: "Data Centers",           aliases: ["Data Centers", "Data Center", "DC", "Digital Infra"]}
+  infrastructure:        {label: "Infrastructure",         aliases: ["Infrastructure", "Infra", "Project Finance"]}
+  renewables:            {label: "Renewables",             aliases: ["Renewables", "Renewable Energy"]}
+  agtech:                {label: "AgTech",                 aliases: ["AgTech", "AgriTech", "Agriculture"]}
+  manufacturing:         {label: "Manufacturing",          aliases: ["Manufacturing", "Manufacutring", "Industrial"]}
+  fintech:               {label: "Fintech",                aliases: ["Fintech", "FinTech", "Financial Technology"]}
+  ai:                    {label: "AI / ML",                aliases: ["AI", "AI/ML", "Artificial Intelligence", "Machine Learning"]}
+  biotech:               {label: "Biotech",                aliases: ["BioTech", "Biotech", "Pharma"]}
+  software:              {label: "Software / SaaS",        aliases: ["Software", "SaaS"]}
+  real_estate:           {label: "Real Estate",            aliases: ["Real Estate", "RE", "Property"]}
+  wealth_management:     {label: "Wealth Management",      aliases: ["Wealth Management"]}
+  financial_services:    {label: "Financial Services",     aliases: ["Financial Services", "FinServ"]}
+  investment_management: {label: "Investment Management",  aliases: ["Investment Management"]}
+  private_equity:        {label: "Private Equity",         aliases: ["Private Equity"]}
+  technology:            {label: "Technology",             aliases: ["Technology", "Tech"]}
+  consumer:              {label: "Consumer",               aliases: ["Consumer", "DTC", "D2C"]}
+  diversified:           {label: "Diversified",            aliases: ["Diversified", "Multi-sector"]}
+  other:                 {label: "Other",                  aliases: ["Other", "Undisclosed"]}
+
+# ---------------------------------------------------------------------
+# stage_focus — what investment stages a firm invests at. Multi-valued.
+# Derived from "Stage Focus" column (family offices) + inferred.
+# Distinct from outreach_status above.
+# ---------------------------------------------------------------------
+stage_focus:
+  pre_seed:              {label: "Pre-Seed",               aliases: ["Pre-seed", "Pre-Seed"]}
+  seed:                  {label: "Seed",                   aliases: ["Seed"]}
+  series_a:              {label: "Series A",               aliases: ["Series A", "A"]}
+  series_b:              {label: "Series B",               aliases: ["Series B", "B"]}
+  series_c_plus:         {label: "Series C+",              aliases: ["Series C", "Series C+", "Late Series"]}
+  early_stage:           {label: "Early Stage",            aliases: ["Early Stage", "Early"]}
+  growth:                {label: "Growth",                 aliases: ["Growth", "Growth Equity", "Growth and Buyout"]}
+  late_stage:            {label: "Late Stage",             aliases: ["Late Stage", "Late"]}
+  buyout:                {label: "Buyout",                 aliases: ["Buyout", "LBO"]}
+  multi_stage:           {label: "Multi-Stage",            aliases: ["Multi-Stage", "Multi-Stage / Wealth Management"]}
+  project_equity:        {label: "Project Equity",         aliases: ["Project Equity", "Equity (Dev/TopCo)"]}
+  project_debt:          {label: "Project Debt",           aliases: ["Project Debt", "Project finance", "Project Finance"]}
+  long_term:             {label: "Long-Term Hold",         aliases: ["Long-Term", "Hold", "Long Term"]}
+  family_office_general: {label: "Family Office General",  aliases: ["Family Office Investment", "Wealth Management"]}
+  undisclosed:           {label: "Undisclosed",            aliases: ["Undisclosed", "N/A", "Not Applicable"]}
+
+# ---------------------------------------------------------------------
+# geography — country + region. Single canonical value, also retain raw "city, state".
+# Used by firms.hq_country + (firms.hq_city stays as raw string).
+# ---------------------------------------------------------------------
+geography:
+  us:                    {label: "United States",          aliases: ["US", "USA", "United States", "America"]}
+  canada:                {label: "Canada",                 aliases: ["Canada", "CA"]}
+  uk:                    {label: "United Kingdom",         aliases: ["UK", "United Kingdom", "Great Britain", "England"]}
+  germany:               {label: "Germany",                aliases: ["Germany", "DE"]}
+  netherlands:           {label: "Netherlands",            aliases: ["Netherlands", "NL", "Holland"]}
+  france:                {label: "France",                 aliases: ["France", "FR"]}
+  switzerland:           {label: "Switzerland",            aliases: ["Switzerland", "CH"]}
+  europe_other:          {label: "Europe (Other)",         aliases: ["Europe", "EU"]}
+  middle_east:           {label: "Middle East",            aliases: ["Middle East", "UAE", "Saudi Arabia", "Qatar"]}
+  asia:                  {label: "Asia",                   aliases: ["Asia", "Singapore", "Hong Kong", "Japan", "China"]}
+  global:                {label: "Global",                 aliases: ["Global", "Worldwide", "International"]}
+  other:                 {label: "Other",                  aliases: ["Other"]}
+
+# ---------------------------------------------------------------------
+# relationship_owner — SDP teammate who owns the relationship.
+# Used by contacts.relationship_owner + engagements (via "Who Replied").
+# Closed list per Conor's note in the project brief.
+# ---------------------------------------------------------------------
+relationship_owner:
+  conor:                 {label: "Conor Wilmot",           aliases: ["Conor", "Conor Wilmot"]}
+  liam:                  {label: "Liam Howe",              aliases: ["Liam", "Liam Howe"]}
+  liam_conor:            {label: "Liam / Conor",           aliases: ["Liam/Conor", "Liam / Conor"]}
+  ahmad:                 {label: "Ahmad Bhatti",           aliases: ["Ahmad", "Ahmad Bhatti"]}
+  david:                 {label: "David Velikonja",        aliases: ["David", "David Velikonja"]}
+  jason:                 {label: "Jason Lampo",            aliases: ["Jason", "Jason Lampo"]}
+  unknown:               {label: "Unknown",                aliases: ["Unknown", "Unassigned"]}
+
+# ---------------------------------------------------------------------
+# contact_role — function within their firm.
+# ---------------------------------------------------------------------
+contact_role:
+  deal_team:             {label: "Deal Team",              aliases: ["Deal Team", "Investments"]}
+  ir:                    {label: "IR / Investor Relations",aliases: ["IR", "Investor Relations"]}
+  ops:                   {label: "Operations / Portfolio", aliases: ["Operations", "Portfolio Ops"]}
+  leadership:            {label: "Leadership",             aliases: ["Leadership", "Executive"]}
+  other:                 {label: "Other",                  aliases: ["Other"]}
+
+# ---------------------------------------------------------------------
+# check_size_bucket — coarse band for filter queries. Derived from min/max usd_m.
+# ---------------------------------------------------------------------
+check_size_bucket:
+  micro:                 {label: "<$1M",                   aliases: []}
+  small:                 {label: "$1M-$5M",                aliases: []}
+  mid:                   {label: "$5M-$25M",               aliases: []}
+  large:                 {label: "$25M-$100M",             aliases: []}
+  mega:                  {label: "$100M+",                 aliases: []}
+
+# ---------------------------------------------------------------------
+# mandate_source — provenance of a mandate row.
+# ---------------------------------------------------------------------
+mandate_source:
+  firm_site:             {label: "Firm Website"}
+  portfolio_inferred:    {label: "Inferred from Portfolio"}
+  team_inferred:         {label: "Inferred from Team Notes"}
+  news:                  {label: "News / Press"}
+  manual:                {label: "Manual / SDP Note"}
+  source_sheet:          {label: "Source XLSX"}
+
+# ---------------------------------------------------------------------
+# engagement_channel — how an outreach event happened.
+# ---------------------------------------------------------------------
+engagement_channel:
+  email:                 {label: "Email"}
+  call:                  {label: "Call"}
+  meeting:               {label: "Meeting"}
+  intro:                 {label: "Warm Intro"}
+  deck_shared:           {label: "Deck Shared"}
+  smartlead:             {label: "Smartlead (Cold Email)"}
+  linkedin:              {label: "LinkedIn"}
+  other:                 {label: "Other"}

@@ -1,0 +1,11 @@
+{
+  "variant_id": "infra_partners",
+  "map": {
+    "header_row": 0,
+    "firm_col": "col_0",
+    "contact_name_col": "col_1",
+    "email_col": "col_2",
+    "mandate_type_col": "col_3",
+    "mandate_desc_col": "col_5"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "variant_id": "master_book",
+  "map": {
+    "header_row": 1,
+    "entity_type_col": "Entity Type",
+    "category_col": "Category",
+    "contact_name_col": "Name",
+    "email_col": "Contact",
+    "firm_col": "Company",
+    "industry_col": "Industry Interest",
+    "deals_col": "Deals",
+    "activity_col": "Recent activity?",
+    "misc_col": "misc"
+  }
+}

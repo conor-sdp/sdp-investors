@@ -1,0 +1,21 @@
+{
+  "variant_id": "interest_faradyne",
+  "map": {
+    "header_row": 2,
+    "firm_col": "Firm",
+    "contact_first_col": "Name",
+    "contact_last_col": "Column 3",
+    "email_col": "Email",
+    "title_col": "Position",
+    "stage_col": "Stage",
+    "firm_type_col": "Firm Type",
+    "who_replied_col": "Who Replied",
+    "followed_up_col": "Followed Up",
+    "website_col": "Website",
+    "feedback_col": "Feedback",
+    "location_col": "Location",
+    "bio_col": "Bio",
+    "notes_col": "Notes",
+    "feedback2_col": "Feedback 2"
+  }
+}

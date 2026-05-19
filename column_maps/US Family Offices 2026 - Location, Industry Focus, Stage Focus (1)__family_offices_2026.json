@@ -1,0 +1,13 @@
+{
+  "variant_id": "family_offices_2026",
+  "map": {
+    "header_row": 1,
+    "firm_col": "Title",
+    "linkedin_col": "LinkedIn",
+    "url_col": "Website",
+    "strategy_col": "Description",
+    "industry_col": "Industry Focus",
+    "stage_col": "Stage Focus",
+    "location_col": "Location"
+  }
+}

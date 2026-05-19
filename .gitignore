@@ -1,0 +1,27 @@
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# DB + caches — large, regenerable
+# NOTE: investors.db IS committed because Streamlit Cloud needs it at runtime.
+# Don't add it back to .gitignore unless you switch to managed Postgres.
+db/_staging_to_canonical.json
+enrichment_cache/
+inventory.json
+taxonomy_raw.json
+
+# Exports — versioned, regeneratable from db
+exports/*.xlsx
+
+# Logs
+ingest_log.md
+
+# OS
+.DS_Store

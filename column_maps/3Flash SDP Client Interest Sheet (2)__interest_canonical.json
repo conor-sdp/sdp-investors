@@ -1,0 +1,22 @@
+{
+  "variant_id": "interest_canonical",
+  "map": {
+    "header_row": 2,
+    "firm_col": "Firm",
+    "contact_name_col": "Name",
+    "email_col": "Email",
+    "title_col": "Position",
+    "stage_col": "Stage",
+    "firm_type_col": "Firm Type",
+    "who_replied_col": "Who Replied",
+    "followed_up_col": "Followed Up",
+    "feedback_col": "Feedback",
+    "location_col": "Location",
+    "email_ctx_col": "Email For Context",
+    "bio_col": "Bio",
+    "smartlead_col": "Smartlead Reply Link",
+    "notes_col": "Notes",
+    "feedback2_col": "Feedback 2",
+    "date_col": "Date Replied"
+  }
+}
