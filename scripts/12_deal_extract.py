@@ -5,8 +5,13 @@ returns structured criteria suitable for feeding into best_contacts.py.
 Used by the Streamlit app (app.py). Can also run standalone:
     .venv/bin/python scripts/12_deal_extract.py < some.txt
     .venv/bin/python scripts/12_deal_extract.py --file deck.pdf
+
+Note: we deliberately do NOT use `from __future__ import annotations` here.
+The Streamlit app loads this module via importlib.spec_from_file_location,
+which means pydantic v2's lazy forward-reference resolution can't find the
+module globals when validating. Keeping real type objects (not strings)
+sidesteps the issue cleanly.
 """
-from __future__ import annotations
 
 import argparse
 import json

@@ -35,9 +35,11 @@ from _score import ScoringCriteria, score_candidates  # noqa: E402
 
 
 # The deal extractor module has a numeric prefix that breaks normal import;
-# load it explicitly.
+# load it explicitly. Register in sys.modules BEFORE exec so pydantic's
+# forward-reference resolver can find the module globals.
 spec = importlib.util.spec_from_file_location("deal_extract", ROOT / "scripts" / "12_deal_extract.py")
 deal_extract = importlib.util.module_from_spec(spec)
+sys.modules["deal_extract"] = deal_extract
 spec.loader.exec_module(deal_extract)
 
 
