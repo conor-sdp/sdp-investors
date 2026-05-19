@@ -166,7 +166,17 @@ def parse_check_sizes(text: str) -> tuple[float | None, float | None]:
 # ---------------------------------------------------------------------
 
 def extract(firm: sqlite3.Row, mandate_text: str | None) -> dict:
-    parts = [firm["strategy"], firm["apollo_description"], firm["apollo_keywords"], firm["apollo_industries"]]
+    # Pull from every available description-bearing field, including PitchBook
+    parts = [
+        firm["strategy"],
+        firm["apollo_description"],
+        firm["apollo_keywords"],
+        firm["apollo_industries"],
+        firm["pb_description"] if "pb_description" in firm.keys() else None,
+        firm["pb_preferred_industries"] if "pb_preferred_industries" in firm.keys() else None,
+        firm["pb_preferred_investment_types"] if "pb_preferred_investment_types" in firm.keys() else None,
+        firm["pb_hq_location"] if "pb_hq_location" in firm.keys() else None,
+    ]
     blob = " | ".join(p for p in parts if p) + (" | " + mandate_text if mandate_text else "")
     blob_low = blob.lower()
 
@@ -232,7 +242,10 @@ def main():
 
     rows = conn.execute(
         """SELECT firm_id, name_canonical, type, strategy, apollo_description,
-                  apollo_keywords, apollo_industries
+                  apollo_keywords, apollo_industries,
+                  pb_description, pb_preferred_industries,
+                  pb_preferred_investment_types, pb_hq_location,
+                  extracted_sectors, extracted_geographies
            FROM firms"""
     ).fetchall()
 
@@ -243,11 +256,47 @@ def main():
                  "with_sector": 0, "with_geo": 0, "with_check_size": 0}
     for r in rows:
         ex = extract(r, mandate_by_firm.get(r["firm_id"]))
-        cols = ", ".join(f"{k}=?" for k in ex.keys())
-        vals = list(ex.values()) + [datetime.now(timezone.utc).isoformat(), r["firm_id"]]
+
+        # COALESCE booleans: never wipe an existing 1 with a None.
+        # Union JSON-array fields: combine rules-extracted slugs with existing.
+        existing_sectors = set()
+        existing_geos = set()
+        try:
+            existing_sectors = set(json.loads(r["extracted_sectors"] or "[]"))
+        except (ValueError, TypeError):
+            pass
+        try:
+            existing_geos = set(json.loads(r["extracted_geographies"] or "[]"))
+        except (ValueError, TypeError):
+            pass
+        new_sectors_json = json.loads(ex["extracted_sectors"])
+        new_geos_json = json.loads(ex["extracted_geographies"])
+        merged_sectors = sorted(existing_sectors | set(new_sectors_json))
+        merged_geos = sorted(existing_geos | set(new_geos_json))
+
         conn.execute(
-            f"UPDATE firms SET {cols}, mandate_extracted_at=? WHERE firm_id=?",
-            vals,
+            """UPDATE firms SET
+                  accepts_debt              = COALESCE(?, accepts_debt),
+                  accepts_equity            = COALESCE(?, accepts_equity),
+                  accepts_project_finance   = COALESCE(?, accepts_project_finance),
+                  accepts_credit            = COALESCE(?, accepts_credit),
+                  accepts_growth            = COALESCE(?, accepts_growth),
+                  extracted_sectors         = ?,
+                  extracted_geographies     = ?,
+                  extracted_check_min_usd_m = COALESCE(extracted_check_min_usd_m, ?),
+                  extracted_check_max_usd_m = COALESCE(extracted_check_max_usd_m, ?),
+                  mandate_signal_score      = MAX(COALESCE(mandate_signal_score, 0), ?),
+                  mandate_extracted_at      = ?
+                WHERE firm_id = ?""",
+            (
+                ex["accepts_debt"], ex["accepts_equity"], ex["accepts_project_finance"],
+                ex["accepts_credit"], ex["accepts_growth"],
+                json.dumps(merged_sectors), json.dumps(merged_geos),
+                ex["extracted_check_min_usd_m"], ex["extracted_check_max_usd_m"],
+                ex["mandate_signal_score"],
+                datetime.now(timezone.utc).isoformat(),
+                r["firm_id"],
+            ),
         )
         updated += 1
         for k in ("accepts_debt", "accepts_equity", "accepts_project_finance", "accepts_credit", "accepts_growth"):
