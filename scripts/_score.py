@@ -49,6 +49,7 @@ class ScoringCriteria:
     geographies: list[str] = field(default_factory=list)
     include_passed: bool = False
     extra_keywords: list[str] = field(default_factory=list)
+    dedupe_by_firm: bool = True   # one row per firm; best contact surfaced, rest as alternates
 
 
 def _jsonl(s):
@@ -189,6 +190,7 @@ def score_candidates(conn: sqlite3.Connection, criteria: ScoringCriteria) -> tup
             "contact_name": r["contact_name"],
             "contact_email": r["contact_email"],
             "contact_title": r["contact_title"],
+            "contact_seniority": r["contact_seniority"],
             "relationship_owner": r["relationship_owner"],
             "last_engagement_status": last_status,
             "last_sdp_client": r["last_sdp_client"],
@@ -209,4 +211,77 @@ def score_candidates(conn: sqlite3.Connection, criteria: ScoringCriteria) -> tup
         })
 
     candidates.sort(key=lambda c: -c["score"])
+
+    if criteria.dedupe_by_firm:
+        candidates = _collapse_to_firms(candidates)
+
     return candidates, rejected
+
+
+# Contact-quality ranking — used to pick the best contact at a firm when
+# multiple contacts share the same firm-level score. Higher is better.
+_SENIORITY_RANK = {
+    "founder": 100, "ceo": 95, "managing_partner": 90, "managing_director": 85,
+    "partner": 80, "principal": 70, "cio": 75, "cfo": 65,
+    "director": 60, "vp": 50, "associate": 35, "analyst": 25,
+    "representative": 15, "other": 10,
+}
+
+
+def _contact_quality(c: dict) -> tuple:
+    """Lex tuple, higher tuple = better contact. Used as tiebreaker
+    within a firm when picking the representative contact."""
+    return (
+        1 if c.get("last_engagement_status") in (
+            "deck_sent", "meeting_booked", "second_meeting", "inquiry",
+            "followup", "pitched") else 0,
+        1 if c.get("relationship_owner") else 0,
+        1 if c.get("contact_email") else 0,
+        _SENIORITY_RANK.get(c.get("contact_seniority") or "other", 0),
+        # break ties by name alphabetically (stable, deterministic)
+        -ord((c.get("contact_name") or "z")[:1].lower()),
+    )
+
+
+def _collapse_to_firms(candidates: list[dict]) -> list[dict]:
+    """Group by firm_id. Keep highest-scoring row; attach other contacts
+    at the same firm as `other_contacts`. Within a firm, the representative
+    contact is the one with the best (engagement, ownership, email,
+    seniority) tuple — not just the first scored."""
+    by_firm: dict[str, list[dict]] = {}
+    order: list[str] = []
+    for c in candidates:
+        fid = c["firm_id"]
+        if fid not in by_firm:
+            by_firm[fid] = []
+            order.append(fid)
+        by_firm[fid].append(c)
+
+    out: list[dict] = []
+    for fid in order:
+        rows = by_firm[fid]
+        # All firm rows share firm-level signals; tiebreak on contact quality
+        rows.sort(key=lambda r: (-r["score"], -1 * sum(_contact_quality(r))))
+        # Pick the row with the best contact (not just highest score —
+        # they're all tied within a firm on firm-level signals)
+        best = max(rows, key=lambda r: (r["score"], _contact_quality(r)))
+        others = [r for r in rows if r is not best and r.get("contact_id")]
+        best["other_contacts"] = [
+            {
+                "contact_id": o["contact_id"],
+                "contact_name": o["contact_name"],
+                "contact_email": o["contact_email"],
+                "contact_title": o["contact_title"],
+                "contact_seniority": o["contact_seniority"],
+                "relationship_owner": o["relationship_owner"],
+                "last_engagement_status": o["last_engagement_status"],
+            }
+            for o in others
+            if o.get("contact_name") or o.get("contact_email")
+        ]
+        best["contact_count_at_firm"] = (
+            (1 if best.get("contact_id") else 0) + len(best["other_contacts"])
+        )
+        out.append(best)
+    out.sort(key=lambda c: -c["score"])
+    return out

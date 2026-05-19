@@ -151,11 +151,23 @@ def render_candidate(c: dict, rank: int):
         if c["contact_name"]:
             owner = f" · owned by **{c['relationship_owner']}**" if c["relationship_owner"] else ""
             title = f" — {c['contact_title']}" if c["contact_title"] else ""
-            st.markdown(f"**{c['contact_name']}**{title}{owner}")
+            st.markdown(f"**Primary contact:** {c['contact_name']}{title}{owner}")
             if c["contact_email"]:
                 st.code(c["contact_email"], language=None)
         else:
             st.markdown("_(no contact on file — firm-only)_")
+
+        # Roll-up of other contacts at this firm
+        others = c.get("other_contacts") or []
+        if others:
+            with st.expander(f"👥 {len(others)} other contact{'s' if len(others) != 1 else ''} at this firm"):
+                for o in others:
+                    owner = f" · owned by **{o['relationship_owner']}**" if o.get("relationship_owner") else ""
+                    title = f" — {o['contact_title']}" if o.get("contact_title") else ""
+                    eng = f" · last status: {o['last_engagement_status']}" if o.get("last_engagement_status") else ""
+                    st.markdown(f"- **{o['contact_name']}**{title}{owner}{eng}")
+                    if o.get("contact_email"):
+                        st.code(o["contact_email"], language=None)
 
         if c["last_sdp_client"] or c["last_feedback"]:
             with st.expander("📨 Last touch"):
