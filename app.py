@@ -60,15 +60,48 @@ st.markdown("""
   .candidate-card { background: white; border: 1px solid #e1e8f0; border-radius: 8px;
                     padding: 16px; margin-bottom: 12px; }
   .badge { display: inline-block; padding: 3px 8px; border-radius: 12px;
-           font-size: 12px; margin-right: 4px; }
+           font-size: 11px; margin-right: 4px; font-weight: 500; }
   .badge-firm { background: #0B2545; color: white; }
   .badge-attio { background: #16A34A; color: white; }
   .badge-attio-weak { background: #D97706; color: white; }
   .badge-engagement { background: #EAB308; color: black; }
+  .badge-capability { background: #DBEAFE; color: #1E40AF; }
+  .badge-capability-on { background: #2563EB; color: white; }
   .score { font-size: 28px; font-weight: 700; color: #0B2545; }
-  .why { color: #64748b; font-size: 12px; font-family: monospace; }
+  .why { color: #64748b; font-size: 11px; font-family: ui-monospace, monospace;
+         padding: 6px 10px; background: #f8fafc; border-radius: 4px;
+         margin-top: 8px; line-height: 1.5; }
+  .quickstats { color: #475569; font-size: 13px; padding: 4px 0; }
+  .quickstats b { color: #0B2545; }
+  .label { color: #94a3b8; font-size: 11px; text-transform: uppercase;
+           letter-spacing: 0.04em; font-weight: 600; margin-top: 6px; }
+  .desc { color: #334155; font-size: 14px; line-height: 1.55; margin-top: 6px; }
+  .firmlinks a { margin-right: 14px; color: #2563EB; font-size: 13px; }
 </style>
 """, unsafe_allow_html=True)
+
+
+def _fmt_money(v, suffix="M"):
+    """Format AUM / check size in human-readable form."""
+    if v is None or v == "":
+        return "—"
+    try:
+        v = float(v)
+    except (ValueError, TypeError):
+        return str(v)
+    if v >= 1000:
+        return f"${v/1000:,.1f}B"
+    if v >= 1:
+        return f"${v:,.0f}{suffix}"
+    return f"${v:.2f}{suffix}"
+
+
+def _fmt_check_size(lo, hi):
+    if lo is None and hi is None:
+        return None
+    if lo is not None and hi is not None and lo != hi:
+        return f"{_fmt_money(lo)} – {_fmt_money(hi)}"
+    return _fmt_money(lo if lo is not None else hi)
 
 
 # ----------------------------------------------------------------------
@@ -131,73 +164,201 @@ def db_stats():
 # ----------------------------------------------------------------------
 # Render a single candidate card
 # ----------------------------------------------------------------------
+def _cap_badges(c: dict) -> str:
+    """Render capability badges: Debt / Equity / Project Finance / Credit / Growth."""
+    pieces = []
+    flags = [
+        ("Debt",            c.get("accepts_debt")),
+        ("Equity",          c.get("accepts_equity")),
+        ("Project Finance", c.get("accepts_project_finance")),
+        ("Credit",          c.get("accepts_credit")),
+        ("Growth",          c.get("accepts_growth")),
+    ]
+    for label, val in flags:
+        if val == 1:
+            pieces.append(f'<span class="badge badge-capability-on">{label}</span>')
+    return "  ".join(pieces)
+
+
+def _location_str(c: dict) -> str | None:
+    """Pick the best available HQ string."""
+    if c.get("apollo_hq_city"):
+        bits = [c["apollo_hq_city"], c.get("apollo_hq_state"), c.get("apollo_hq_country")]
+        return ", ".join(b for b in bits if b)
+    if c.get("pb_hq_location"):
+        return c["pb_hq_location"]
+    if c.get("hq_city"):
+        return c["hq_city"] + (f", {c['hq_country']}" if c.get("hq_country") else "")
+    return None
+
+
 def render_candidate(c: dict, rank: int):
-    firm_badge = f'<span class="badge badge-firm">{c["firm_type"] or "—"}</span>'
+    # Header row: rank, firm name, type/attio/engagement badges
+    firm_badge = f'<span class="badge badge-firm">{c["firm_type"] or c.get("pb_investor_type") or "—"}</span>'
     attio_badge = ""
-    if c["attio_connection_strength"]:
+    if c.get("attio_connection_strength"):
         css = "badge-attio" if c["attio_connection_strength"] in ("Good", "Strong", "Very strong") else "badge-attio-weak"
         attio_badge = f'<span class="badge {css}">{c["attio_connection_strength"]}</span>'
     eng_badge = ""
-    if c["last_engagement_status"]:
+    if c.get("last_engagement_status"):
         eng_badge = f'<span class="badge badge-engagement">{c["last_engagement_status"]}</span>'
 
     col_left, col_right = st.columns([5, 1])
+
     with col_left:
         st.markdown(
-            f"### #{rank}  {c['firm']}  "
-            f"{firm_badge} {attio_badge} {eng_badge}",
+            f"### #{rank}  {c['firm']}  {firm_badge} {attio_badge} {eng_badge}",
             unsafe_allow_html=True,
         )
-        if c["contact_name"]:
-            owner = f" · owned by **{c['relationship_owner']}**" if c["relationship_owner"] else ""
-            title = f" — {c['contact_title']}" if c["contact_title"] else ""
+
+        # Quick stats line: founded, employees, AUM, # investments, location
+        stats_bits = []
+        if c.get("apollo_founded_year"):
+            stats_bits.append(f"<b>Founded</b> {int(c['apollo_founded_year'])}")
+        if c.get("apollo_employee_count"):
+            stats_bits.append(f"<b>{int(c['apollo_employee_count'])}</b> employees")
+        if c.get("aum_usd_m"):
+            stats_bits.append(f"<b>AUM</b> {_fmt_money(c['aum_usd_m'])}")
+        if c.get("pb_total_investments"):
+            stats_bits.append(f"<b>{c['pb_total_investments']}</b> total invest.")
+        if c.get("pb_active_portfolio"):
+            stats_bits.append(f"<b>{c['pb_active_portfolio']}</b> active port.")
+        loc = _location_str(c)
+        if loc:
+            stats_bits.append(f"📍 {loc}")
+        if stats_bits:
+            st.markdown(
+                f'<div class="quickstats">{"  ·  ".join(stats_bits)}</div>',
+                unsafe_allow_html=True,
+            )
+
+        # Capability badges row
+        cap_html = _cap_badges(c)
+        if cap_html:
+            st.markdown(f'<div style="margin: 6px 0">{cap_html}</div>', unsafe_allow_html=True)
+
+        # Primary contact
+        if c.get("contact_name"):
+            owner = f" · owned by **{c['relationship_owner']}**" if c.get("relationship_owner") else ""
+            title = f" — {c['contact_title']}" if c.get("contact_title") else ""
             st.markdown(f"**Primary contact:** {c['contact_name']}{title}{owner}")
-            if c["contact_email"]:
+            if c.get("contact_email"):
                 st.code(c["contact_email"], language=None)
         else:
             st.markdown("_(no contact on file — firm-only)_")
 
-        # Roll-up of other contacts at this firm
+        # Other contacts at the firm
         others = c.get("other_contacts") or []
         if others:
             with st.expander(f"👥 {len(others)} other contact{'s' if len(others) != 1 else ''} at this firm"):
                 for o in others:
                     owner = f" · owned by **{o['relationship_owner']}**" if o.get("relationship_owner") else ""
                     title = f" — {o['contact_title']}" if o.get("contact_title") else ""
-                    eng = f" · last status: {o['last_engagement_status']}" if o.get("last_engagement_status") else ""
+                    eng = f" · last status: `{o['last_engagement_status']}`" if o.get("last_engagement_status") else ""
                     st.markdown(f"- **{o['contact_name']}**{title}{owner}{eng}")
                     if o.get("contact_email"):
                         st.code(o["contact_email"], language=None)
 
-        if c["last_sdp_client"] or c["last_feedback"]:
-            with st.expander("📨 Last touch"):
-                if c["last_sdp_client"]:
-                    st.markdown(f"**Pitched for:** {c['last_sdp_client']}  ·  status: `{c['last_engagement_status']}`")
-                if c["last_engagement_date"]:
+        # Description (always visible)
+        if c.get("firm_strategy"):
+            desc = c["firm_strategy"]
+            short = desc[:500]
+            if len(desc) > 500:
+                st.markdown(f'<div class="label">Description</div>'
+                            f'<div class="desc">{short}…</div>',
+                            unsafe_allow_html=True)
+                with st.expander("read full description"):
+                    st.markdown(desc)
+            else:
+                st.markdown(f'<div class="label">Description</div>'
+                            f'<div class="desc">{desc}</div>',
+                            unsafe_allow_html=True)
+
+        # Investment profile block — 2-column layout
+        col_a, col_b = st.columns(2)
+        with col_a:
+            if c.get("extracted_sectors"):
+                st.markdown(f'<div class="label">Sectors</div>'
+                            f'<div class="desc">{", ".join(c["extracted_sectors"])}</div>',
+                            unsafe_allow_html=True)
+            if c.get("pb_preferred_industries"):
+                st.markdown(f'<div class="label">PitchBook industries</div>'
+                            f'<div class="desc">{c["pb_preferred_industries"]}</div>',
+                            unsafe_allow_html=True)
+            check_str = _fmt_check_size(c.get("check_size_min_usd_m"), c.get("check_size_max_usd_m"))
+            if check_str:
+                st.markdown(f'<div class="label">Check size (per deal)</div>'
+                            f'<div class="desc">{check_str}</div>',
+                            unsafe_allow_html=True)
+        with col_b:
+            if c.get("extracted_geographies"):
+                st.markdown(f'<div class="label">Geographies</div>'
+                            f'<div class="desc">{", ".join(c["extracted_geographies"])}</div>',
+                            unsafe_allow_html=True)
+            if c.get("pb_preferred_investment_types"):
+                st.markdown(f'<div class="label">PitchBook investment types</div>'
+                            f'<div class="desc">{c["pb_preferred_investment_types"]}</div>',
+                            unsafe_allow_html=True)
+            if c.get("apollo_industry"):
+                st.markdown(f'<div class="label">Apollo industry</div>'
+                            f'<div class="desc">{c["apollo_industry"]}</div>',
+                            unsafe_allow_html=True)
+
+        # Last touch + history
+        if c.get("last_sdp_client") or c.get("last_feedback") or c.get("last_notes"):
+            with st.expander("📨 Last touch + history"):
+                if c.get("last_sdp_client"):
+                    st.markdown(f"**Pitched for:** {c['last_sdp_client']}  ·  "
+                                f"status: `{c.get('last_engagement_status') or '?'}`")
+                if c.get("last_engagement_date"):
                     st.markdown(f"**Date:** {c['last_engagement_date']}")
-                if c["last_feedback"]:
-                    st.markdown(f"**Feedback:** {c['last_feedback']}")
+                if c.get("last_engagement_channel"):
+                    st.markdown(f"**Channel:** `{c['last_engagement_channel']}`")
+                if c.get("last_responded_by"):
+                    st.markdown(f"**Responded by:** {c['last_responded_by']}")
+                if c.get("last_feedback"):
+                    st.markdown(f"**Feedback:**")
+                    st.markdown(f"> {c['last_feedback']}")
+                if c.get("last_feedback_2"):
+                    st.markdown(f"**Additional feedback:**")
+                    st.markdown(f"> {c['last_feedback_2']}")
+                if c.get("last_notes"):
+                    st.markdown(f"**Notes:** {c['last_notes']}")
+                if c.get("total_engagements_for_firm", 0) > 1:
+                    st.caption(f"Total recorded touches across this firm: "
+                               f"{c['total_engagements_for_firm']}")
 
-        if c["mandate_descriptions"]:
-            with st.expander("📋 Mandate on file"):
+        # Mandate on file
+        if c.get("mandate_descriptions"):
+            with st.expander("📋 Mandate notes on file"):
                 st.markdown(c["mandate_descriptions"])
-        if c["firm_strategy"]:
-            with st.expander("🏢 Firm strategy"):
-                st.markdown(c["firm_strategy"][:800] + ("…" if len(c["firm_strategy"] or "") > 800 else ""))
 
+        # Score-breakdown footer
         st.markdown(
-            f'<div class="why">Sectors: {", ".join(c["extracted_sectors"]) or "—"} · '
-            f'Geo: {", ".join(c["extracted_geographies"]) or "—"} · '
-            f'Score breakdown: {" | ".join(c["why"])}</div>',
+            f'<div class="why">Score: <b>{c["score"]}</b>  ·  '
+            f'{" | ".join(c["why"])}</div>',
             unsafe_allow_html=True,
         )
 
     with col_right:
         st.markdown(f'<div class="score">{c["score"]}</div>', unsafe_allow_html=True)
-        if c["url"]:
-            st.markdown(f"[website ↗]({c['url']})")
-        if c["firm_linkedin"]:
-            st.markdown(f"[LinkedIn ↗]({c['firm_linkedin']})")
+        st.markdown(f"<div style='font-size:11px;color:#94a3b8'>RANK #{rank}</div>",
+                    unsafe_allow_html=True)
+        # Links
+        links = []
+        if c.get("url"):
+            links.append(f"[Website ↗]({c['url']})")
+        if c.get("firm_linkedin"):
+            links.append(f"[LinkedIn ↗]({c['firm_linkedin']})")
+        if c.get("firm_twitter"):
+            links.append(f"[Twitter ↗]({c['firm_twitter']})")
+        if links:
+            for l in links:
+                st.markdown(l)
+        if c.get("firm_phone"):
+            st.caption(f"📞 {c['firm_phone']}")
+        if c.get("attio_last_interaction"):
+            st.caption(f"Last interaction:\n{c['attio_last_interaction'][:10]}")
 
     st.divider()
 

@@ -196,17 +196,58 @@ def score_candidates(conn: sqlite3.Connection, criteria: ScoringCriteria) -> tup
             "last_sdp_client": r["last_sdp_client"],
             "last_feedback": r["last_feedback"],
             "last_engagement_date": r["last_engagement_date"],
+            "last_engagement_channel": r["last_engagement_channel"],
+            "last_notes": r["last_notes"],
+            "last_feedback_2": r["last_feedback_2"],
+            "total_engagements_for_firm": r["total_engagements_for_firm"],
             "attio_connection_strength": r["attio_connection_strength"],
             "attio_last_interaction": r["attio_last_interaction"],
             "mandate_descriptions": r["mandate_descriptions"],
-            "firm_strategy": r["firm_strategy"],
+            "firm_strategy": r["firm_strategy"],   # coalesced: pb > apollo > scraped
             "extracted_sectors": _jsonl(r["extracted_sectors"]),
             "extracted_geographies": _jsonl(r["extracted_geographies"]),
+            # Structured capability flags
+            "accepts_debt": r["accepts_debt"],
+            "accepts_equity": r["accepts_equity"],
+            "accepts_project_finance": r["accepts_project_finance"],
+            "accepts_credit": r["accepts_credit"],
+            "accepts_growth": r["accepts_growth"],
+            # Check size: prefer mandate-derived, else extracted/PB
+            "check_size_min_usd_m": (
+                r["mandate_check_size_min_usd_m"]
+                or r["extracted_check_min_usd_m"]
+            ),
+            "check_size_max_usd_m": (
+                r["mandate_check_size_max_usd_m"]
+                or r["extracted_check_max_usd_m"]
+            ),
+            # Firm-level economic / company stats
+            "aum_usd_m": r["aum_usd_m"],
             "apollo_employee_count": r["apollo_employee_count"],
+            "apollo_founded_year": r["apollo_founded_year"],
             "apollo_industry": r["apollo_industry"],
+            "apollo_annual_revenue": r["apollo_annual_revenue"],
+            # PitchBook specifics
+            "pb_investor_type": r["pb_investor_type"],
+            "pb_total_investments": r["pb_total_investments"],
+            "pb_active_portfolio": r["pb_active_portfolio"],
+            "pb_preferred_investment_types": r["pb_preferred_investment_types"],
+            "pb_preferred_industries": r["pb_preferred_industries"],
+            "pb_hq_location": r["pb_hq_location"],
+            # Location
+            "hq_city": r["hq_city"],
+            "hq_country": r["hq_country"],
+            "apollo_hq_city": r["apollo_hq_city"],
+            "apollo_hq_state": r["apollo_hq_state"],
+            "apollo_hq_country": r["apollo_hq_country"],
+            # Links + social
             "firm_linkedin": r["firm_linkedin"],
+            "firm_twitter": r["firm_twitter"],
+            "firm_phone": r["firm_phone"],
             "url": r["url"],
             "domain": r["domain"],
+            # Bio fields
+            "contact_bio": r["contact_bio"],
             "why": why,
         })
 
